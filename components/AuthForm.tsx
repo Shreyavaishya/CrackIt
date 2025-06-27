@@ -1,15 +1,19 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-import { toast } from "sonner"
-import FormField from "./FormField"
-import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import Image from "next/image";
+import Link from "next/link";
+import { toast } from "sonner";
+import FormField from "./FormField";
+import { useRouter } from "next/navigation";
+import { auth } from "@/firebase/admin";
+import { signIn, signUp } from "@/lib/actions/auth.action";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword }  from "firebase/auth";
+
 
 const formSchema = z.object({
   username: z.string().min(2).max(50),
@@ -37,13 +41,43 @@ const AuthForm = ({type}: {type: FormType}) => {
   })
 
   //  Define a submit handler.
-function onSubmit(values: z.infer<typeof formSchema>) {
+async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       if(type === 'signup'){
+        const {name, email, password} = values;
+
+        const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+
+        const result = await signUp({
+          uid: userCredentials.user.uid,
+          name: name!,
+          email,
+          password,
+        })
+
+        if(!result?.success){
+          toast.error(result.message)
+          return;
+        }
+
         toast.success('Account created successfully. Please SignIn.');
         router.push('/signin');
     
       } else {
+        const {email, password} = values;
+
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const idToken = await userCredential.user.getIdToken();
+
+        if(!idToken){
+          toast.error('Sign in failed')
+          return;
+        }
+
+        await signIn({
+          email, idToken
+        });
+        
         toast.success('SignIn successfully.');
         router.push('/signup');
 
