@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -10,9 +10,13 @@ import Link from "next/link";
 import { toast } from "sonner";
 import FormField from "./FormField";
 import { useRouter } from "next/navigation";
-import { auth } from "@/firebase/admin";
 import { signIn, signUp } from "@/lib/actions/auth.action";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword }  from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+
+
+const auth = getAuth();
+
+type FormType = "signin" | "signup";
 
 
 const formSchema = z.object({
@@ -145,8 +149,4 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
   )
 }
 
-
 export default AuthForm
-
-
-
