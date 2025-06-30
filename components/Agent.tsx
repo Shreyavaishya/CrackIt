@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from '@/lib/utils';
 import Image from 'next/image'
 import React from 'react'
@@ -17,7 +19,7 @@ enum CallStatus{
 
 function Agent({userName}: AgentProps) {
     const isSpeaking = true;
-    const callstatus = CallStatus.ACTIVE;
+    const callStatus = CallStatus.ACTIVE;
     const messages = [
         'Whats your name? ',
         'My name is Shreya.'
