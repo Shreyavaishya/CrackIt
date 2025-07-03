@@ -1,24 +1,23 @@
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore } from "firebase-admin/firestore";
+import { cert, getApps, initializeApp, ServiceAccount } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-const initFirebaseAdmin = () => {
-    const apps = getApps();
+// Import JSON and cast it as ServiceAccount
+import serviceAccountJson from './firebase-service-account.json';
 
-    if(!apps.length){
-        initializeApp({
-            credential: cert({
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n")
-            })
-        })
-    }
+const serviceAccount = serviceAccountJson as ServiceAccount;
 
-    return {
-        auth: getAuth(),
-        db: getFirestore()
-    }
+function initFirebaseAdmin() {
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert(serviceAccount),
+    });
+  }
+
+  return {
+    auth: getAuth(),
+    db: getFirestore(),
+  };
 }
 
 export const { auth, db } = initFirebaseAdmin();
