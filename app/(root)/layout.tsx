@@ -19,7 +19,7 @@ const RootLayout = async ({children} : {children: ReactNode}) => {
                 alt="Logo" 
                 width={38} 
                 height={32} />
-                <h2 className="text-primary-100">PrepWise</h2>
+                <h2 className="text-primary-100">CrackIt</h2>
                 </Link>
             </nav>
             {children}
