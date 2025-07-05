@@ -1,19 +1,18 @@
-import { initializeApp, cert, getApps, applicationDefault, getApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+// src/lib/firebase.client.ts
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBlPPyektJIN5nZUnPGvlx4oB94PivFhlQ",
-  authDomain: "crackit-2c47a.firebaseapp.com",
-  projectId: "crackit-2c47a",
-  storageBucket: "crackit-2c47a.firebasestorage.app",
-  messagingSenderId: "976281519900",
-  appId: "1:976281519900:web:eeb6043e13a970abbe9cd9",
-  measurementId: "G-HVXYWX7L8B"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-// Initialize Firebase
-const app = !getApps.length ? initializeApp(firebaseConfig) : getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
