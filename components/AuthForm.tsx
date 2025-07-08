@@ -5,9 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase.client"; // ✅ only import THIS auth
-import { signIn, signUp } from "@/lib/actions/auth.action";
-
+import { auth } from "@/lib/firebase.client"; // ✅ client-side firebase
 import { toast } from "sonner";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -44,37 +42,45 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
       if (type === "signup") {
         const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredentials.user.uid;
 
-        const result = await signUp({
-          uid: userCredentials.user.uid,
-          name: name!,
-          email,
-          password,
+        const res = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid, name, email }),
         });
 
-        if (!result?.success) {
+        const result = await res.json();
+
+        if (!result.success) {
           toast.error(result.message);
           return;
         }
 
-        toast.success("Account created successfully. Please Sign In.");
+        toast.success("Account created successfully. Please sign in.");
         router.push("/signin");
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const idToken = await userCredential.user.getIdToken();
 
-        if (!idToken) {
-          toast.error("Sign in failed");
+        const res = await fetch("/api/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, idToken }),
+        });
+
+        const result = await res.json();
+
+        if (!result.success) {
+          toast.error(result.message);
           return;
         }
 
-        await signIn({ email, idToken });
-
         toast.success("Signed in successfully.");
-        router.push("/signup"); // ← maybe you meant to go to dashboard instead?
+        router.push("/");
       }
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
       toast.error(`There was an error: ${error.message}`);
     }
   }

@@ -13,6 +13,7 @@ function initFirebaseAdmin() {
       credential: cert(serviceAccount),
     });
   }
+  console.log("✅ Firebase Admin Initialized");
 
   return {
     auth: getAuth(),

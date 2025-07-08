@@ -58,20 +58,26 @@ export async function signUp(params: SignUpParams) {
   }
 }
 
-export async function signIn(params: SignInParams) {
-    const { email, idToken } = params;
+const signIn = async (params: SignInParams) => {
+  const { email, idToken } = params;
 
   try {
     const userRecord = await auth.getUserByEmail(email);
-    if (!userRecord)
+    if (!userRecord) {
       return {
         success: false,
         message: "User does not exist. Create an account.",
       };
+    }
 
     await setSessionCookie(idToken);
+
+    return {
+      success: true,
+      message: "Signed in successfully.",
+    };
   } catch (error: any) {
-    console.log("");
+    console.error("SignIn error:", error);
 
     return {
       success: false,
@@ -79,8 +85,6 @@ export async function signIn(params: SignInParams) {
     };
   }
 }
-
-
 
 export async function setSessionCookie(idToken: string) {
     const cookieStore = await cookies();
@@ -96,6 +100,9 @@ export async function setSessionCookie(idToken: string) {
         path: '/',
         sameSite: 'lax',
     })
+
+console.log("🪪 ID Token:", idToken); // ✅ should be a long JWT string
+
 }
 
 type User = {
@@ -139,3 +146,4 @@ export async function isAuthenticated() {
   return !!user;
 }
 
+export {signIn};
