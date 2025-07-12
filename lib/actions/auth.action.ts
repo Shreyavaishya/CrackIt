@@ -1,6 +1,6 @@
 "use server";
 
-import { auth, db } from "@/firebase/admin";
+import { auth, db } from "@/lib/firebaseAdmin";
 import { cookies } from "next/headers";
 
 type SignUpParams = {
