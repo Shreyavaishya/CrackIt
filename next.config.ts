@@ -6,14 +6,8 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  webpack(config) {
-    config.ignoreWarnings = [
-      // Suppress Firebase and Google Cloud source map warnings
-      /Failed to parse source map/,
-    ];
-    return config;
-  },
+  }
+  
 };
 
 export default nextConfig;

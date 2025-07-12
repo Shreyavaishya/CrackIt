@@ -1,22 +1,31 @@
-"use server";
+ "use server";
 
-import { auth, db } from "@/lib/firebaseAdmin";
+import { auth, db } from "@/firebase/admin";
 import { cookies } from "next/headers";
 
-type SignUpParams = {
-  uid: string,
-  name: string,
-  email: string;
-  password: string;
-};
+// Session duration (1 week)
+const SESSION_DURATION = 60 * 60 * 24 * 7;
 
-type SignInParams = {
-  idToken: string,
-  email: string;
-};
+// Set session cookie
+export async function setSessionCookie(idToken: string) {
+  const cookieStore = await cookies();
+
+  // Create session cookie
+  const sessionCookie = await auth.createSessionCookie(idToken, {
+    expiresIn: SESSION_DURATION * 1000, // milliseconds
+  });
+
+  // Set cookie in the browser
+  cookieStore.set("session", sessionCookie, {
+    maxAge: SESSION_DURATION,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: "lax",
+  });
+}
 
 export async function signUp(params: SignUpParams) {
-
   const { uid, name, email } = params;
 
   try {
@@ -58,26 +67,20 @@ export async function signUp(params: SignUpParams) {
   }
 }
 
-const signIn = async (params: SignInParams) => {
+export async function signIn(params: SignInParams) {
   const { email, idToken } = params;
 
   try {
     const userRecord = await auth.getUserByEmail(email);
-    if (!userRecord) {
+    if (!userRecord)
       return {
         success: false,
         message: "User does not exist. Create an account.",
       };
-    }
 
     await setSessionCookie(idToken);
-
-    return {
-      success: true,
-      message: "Signed in successfully.",
-    };
   } catch (error: any) {
-    console.error("SignIn error:", error);
+    console.log("");
 
     return {
       success: false,
@@ -86,34 +89,16 @@ const signIn = async (params: SignInParams) => {
   }
 }
 
-export async function setSessionCookie(idToken: string) {
-    const cookieStore = await cookies();
+// Sign out user by clearing the session cookie
+export async function signOut() {
+  const cookieStore = await cookies();
 
-    const sessionCookie = await auth.createSessionCookie(idToken, {
-        expiresIn: 60* 60* 24* 7 * 1000,
-    })
-
-    cookieStore.set('session', sessionCookie, {
-        maxAge: 60* 60* 24* 7 ,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax',
-    })
-
-console.log("🪪 ID Token:", idToken); // ✅ should be a long JWT string
-
+  cookieStore.delete("session");
 }
 
-type User = {
-  id: string;
-  email: string;
-  name?: string;
-  photoUrl?: string;
-};
-
+// Get current user from session cookie
 export async function getCurrentUser(): Promise<User | null> {
-    const cookieStore = await cookies();
+  const cookieStore = await cookies();
 
   const sessionCookie = cookieStore.get("session")?.value;
   if (!sessionCookie) return null;
@@ -145,5 +130,3 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
-
-export {signIn};
