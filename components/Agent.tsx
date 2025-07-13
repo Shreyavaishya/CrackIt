@@ -8,11 +8,6 @@ import { vapi } from "@/lib/vapi.sdk";
 // import { interviewer } from "@/constants";
 // import { createFeedback } from "@/lib/actions/general.action";
 
-type AgentProps = {
-    userName: string,
-    userId: string,
-    type: string
-}
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -29,10 +24,10 @@ interface SavedMessage {
 const Agent = ({
   userName,
   userId,
-  // interviewId,
-  // feedbackId,
+  interviewId,
+  feedbackId,
   type,
-  // questions,
+  questions,
 }: AgentProps) => {
   const router = useRouter();
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
