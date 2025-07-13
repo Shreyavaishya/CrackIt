@@ -1,23 +1,21 @@
-import Agent from '@/components/Agent'
-import { getCurrentUser } from '@/lib/actions/auth.action';
-import React from 'react'
+import Agent from "@/components/Agent";
+import { getCurrentUser } from "@/lib/actions/auth.action";
 
-async function page () {
+const Page = async () => {
   const user = await getCurrentUser();
 
   return (
     <>
-    <h3>
-        Interview Generation
-        <Agent 
-        userName={user?.name}
+      <h3>Interview generation</h3>
+
+      <Agent
+        userName={user?.name!}
         userId={user?.id}
-        type="generate">
-
-        </Agent>
-    </h3>
+        profileImage={user?.profileURL}
+        type="generate"
+      />
     </>
-  )
-}
+  );
+};
 
-export default page
+export default Page;
