@@ -115,6 +115,14 @@ const Agent = ({
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
+  await vapi
+  .start(interviewer, {
+    variableValues: {
+      questions: questions,
+    },
+  })
+  .catch((err) => console.error("Interview vapi start failed:", err));
+
     if (type === "generate") {
       await vapi.start(
         undefined,
@@ -167,7 +175,6 @@ const Agent = ({
           <h3>AI Interviewer</h3>
         </div>
 
-        {/* User Profile Card */}
         <div className="card-border">
           <div className="card-content">
             <Image
