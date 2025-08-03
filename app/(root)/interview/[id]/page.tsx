@@ -11,20 +11,34 @@ import {
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
 
+// const InterviewDetails = async ({ params }: RouteParams) => {
+//   const { id } = await params;
+
+//   const user = await getCurrentUser();
+
+//   const interview = await getInterviewById(id); 
+//   if (!interview) redirect("/");
+
+//   const feedback = await getFeedbackByInterviewId({
+//     id: id,
+//     userId: user.id,
+//   });
+
 const InterviewDetails = async ({ params }: RouteParams) => {
   const { id } = await params;
 
   const user = await getCurrentUser();
+  if (!user) redirect("/sign-in"); // ✅ fixes the TS error
 
-  const interview = await getInterviewById(id); 
+  const interview = await getInterviewById(id);
   if (!interview) redirect("/");
 
   const feedback = await getFeedbackByInterviewId({
     id: id,
-    userId: user?.id!,
+    userId: user.id,
   });
 
-  return (
+   return (
     <>
       <div className="flex flex-row gap-4 justify-between">
         <div className="flex flex-row gap-4 items-center max-sm:flex-col">
@@ -58,5 +72,3 @@ const InterviewDetails = async ({ params }: RouteParams) => {
     </>
   );
 };
-
-export default InterviewDetails;

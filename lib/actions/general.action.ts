@@ -79,7 +79,7 @@ export async function getFeedbackByInterviewId(
 
   const querySnapshot = await db
     .collection("feedback")
-    .where("interviewId", "==", id)
+    .where("id", "==", id)
     .where("userId", "==", userId)
     .limit(1)
     .get();
@@ -90,52 +90,31 @@ export async function getFeedbackByInterviewId(
   return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
 }
 
-// export async function getLatestInterviews(
-//   params: GetLatestInterviewsParams
-// ): Promise<Interview[] | null> {
-//   const { userId, limit = 20 } = params;
-
-//   const interviews = await db
-//     .collection("interviews")
-//     .orderBy("createdAt", "desc")
-//     .where("finalized", "==", true)
-//     .where("userId", "!=", userId)
-//     .limit(limit)
-//     .get();
-
-//   return interviews.docs.map((doc) => ({
-//     id: doc.id,
-//     ...doc.data(),
-//   })) as Interview[];
-// }
-
 export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
 
-  // Guard clause: skip the query if userId is not provided
-  if (!userId) return null;
-
-  const interviewsSnapshot = await db
+  const interviews = await db
     .collection("interviews")
+    .orderBy("createdAt", "desc")
     .where("finalized", "==", true)
     .where("userId", "!=", userId)
-    .orderBy("createdAt", "desc")
     .limit(limit)
     .get();
 
-  return interviewsSnapshot.docs.map((doc) => ({
+  return interviews.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   })) as Interview[];
 }
 
-
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
-    if (!userId) return [];
+  if (!userId) {
+    throw new Error("userId is required to fetch interviews.");
+  }
   const interviews = await db
     .collection("interviews")
     .where("userId", "==", userId)

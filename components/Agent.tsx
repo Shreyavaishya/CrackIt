@@ -110,18 +110,18 @@ const Agent = ({
         handleGenerateFeedback(messages);
       }
     }
-  }, [messages, callStatus, type, userId]);
+  }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-  await vapi
-  .start(interviewer, {
-    variableValues: {
-      questions: questions,
-    },
-  })
-  .catch((err) => console.error("Interview vapi start failed:", err));
+  // await vapi
+  // .start(interviewer, {
+  //   variableValues: {
+  //     questions: questions,
+  //   },
+  // })
+  // .catch((err) => console.error("Interview vapi start failed:", err));
 
     if (type === "generate") {
       await vapi.start(
