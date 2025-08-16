@@ -3,7 +3,7 @@
 import { auth, db } from "@/firebase/admin";
 import { cookies } from "next/headers";
 
-const SESSION_DURATION = 60 * 60 * 24 * 7;
+const SESSION_DURATION = 60 * 60 * 24 * 5;
 
 export async function setSessionCookie(idToken: string) {
   const cookieStore = await cookies();
@@ -12,6 +12,8 @@ export async function setSessionCookie(idToken: string) {
   const sessionCookie = await auth.createSessionCookie(idToken, {
     expiresIn: SESSION_DURATION * 1000, // milliseconds
   });
+
+  console.log("sessionCookie:", sessionCookie);
 
   // Set cookie in the browser
   cookieStore.set("session", sessionCookie, {
@@ -89,16 +91,22 @@ export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
 
   const sessionCookie = cookieStore.get("session")?.value;
-  if (!sessionCookie) return null;
+  if (!sessionCookie) {
+    console.log("No session cookie found");
+    return null;
+  }
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    console.log("decodedClaims:", decodedClaims);
 
-    // get user info from db
     const userRecord = await db
       .collection("users")
-      .doc(decodedClaims.uid)
+      .doc(decodedClaims.user_id) // ✅ FIXED THIS
       .get();
+
+    console.log("userRecord.exists:", userRecord.exists);
+
     if (!userRecord.exists) return null;
 
     return {
@@ -106,15 +114,16 @@ export async function getCurrentUser(): Promise<User | null> {
       id: userRecord.id,
     } as User;
   } catch (error) {
-    console.log(error);
-
-    // Invalid or expired session
+    console.error("Session verification failed:", error);
     return null;
   }
 }
+
+
 
 // Check if user is authenticated
 export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
