@@ -4,6 +4,7 @@ import Image from "next/image";
 import DisplayTechIcons from "./DisplayTechIcons";
 import { Button } from "./ui/button";
 import { cn, getRandomInterviewCover } from "@/lib/utils";
+import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
 
 const InterviewCard = async ({
   id,
@@ -14,7 +15,12 @@ const InterviewCard = async ({
   createdAt,
 }: InterviewCardProps) => {
   
-  const Feedback = null as Feedback | null;
+  const Feedback = userId && id ? await getFeedbackByInterviewId({
+    id: id, userId,
+    interviewId: ""
+  }) : null;
+
+
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
 
   const badgeColor =
