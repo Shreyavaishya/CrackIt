@@ -98,11 +98,11 @@ export async function getCurrentUser(): Promise<User | null> {
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    console.log("decodedClaims:", decodedClaims);
+    // console.log("decodedClaims:", decodedClaims);
 
     const userRecord = await db
       .collection("users")
-      .doc(decodedClaims.user_id) // ✅ FIXED THIS
+      .doc(decodedClaims.user_id) 
       .get();
 
     console.log("userRecord.exists:", userRecord.exists);

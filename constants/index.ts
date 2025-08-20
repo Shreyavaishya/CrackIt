@@ -198,10 +198,7 @@ export const interviewCovers = [
   "/quora.png",
   "/reddit.png",
   "/skype.png",
-  "/spotify.png",
-  "/telegram.png",
-  "/tiktok.png",
-  "/yahoo.png",
+
 ];
 
 export const dummyInterviews: Interview[] = [

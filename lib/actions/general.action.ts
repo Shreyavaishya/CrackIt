@@ -6,6 +6,11 @@ import { google } from "@ai-sdk/google";
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
 
+// helper to clean invalid trailing commas in JSON-like strings
+function cleanJSON(text: string) {
+  return text.replace(/,\s*([}\]])/g, "$1");
+}
+
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
 
@@ -17,7 +22,8 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("");
 
-    const { object } = await generateObject({
+    // run generation
+    let { object } = await generateObject({
       model: google("gemini-2.0-flash-001", {
         structuredOutputs: false,
       }),
@@ -38,9 +44,19 @@ export async function createFeedback(params: CreateFeedbackParams) {
         "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
     });
 
+    // clean in case object is a string with trailing commas
+    if (typeof object === "string") {
+      try {
+        object = JSON.parse(cleanJSON(object));
+      } catch (e) {
+        console.error("Failed to parse feedback JSON after cleaning:", e);
+        throw e;
+      }
+    }
+
     const feedback = {
-      interviewId: interviewId,
-      userId: userId,
+      interviewId,
+      userId,
       totalScore: object.totalScore,
       categoryScores: object.categoryScores,
       strengths: object.strengths,
@@ -113,8 +129,8 @@ export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
   if (!userId) {
-  throw new Error("userId is required to fetch interviews.");
-}
+    throw new Error("userId is required to fetch interviews.");
+  }
 
   const interviews = await db
     .collection("interviews")
