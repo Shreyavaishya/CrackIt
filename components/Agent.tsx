@@ -214,7 +214,7 @@ const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatu
             />
 
             <span className="relative">
-              {isCallInactiveOrFinished ? 'Call' : '...'}
+                {isCallInactiveOrFinished ? 'Call' : '...'}
             </span>
           </button>
         ) : (
