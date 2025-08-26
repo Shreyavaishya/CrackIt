@@ -151,6 +151,9 @@ const Agent = ({
     vapi.stop();
   };
 
+const latestMessage = messages[messages.length - 1]?.content;
+const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
+
   return (
     <>
       <div className="call-view">
@@ -188,13 +191,13 @@ const Agent = ({
         <div className="transcript-border">
           <div className="transcript">
             <p
-              key={lastMessage}
+              key={latestMessage}
               className={cn(
                 "transition-opacity duration-500 opacity-0",
                 "animate-fadeIn opacity-100"
               )}
             >
-              {lastMessage}
+              {latestMessage}
             </p>
           </div>
         </div>
@@ -211,9 +214,7 @@ const Agent = ({
             />
 
             <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                ? "Call"
-                : ". . ."}
+              {isCallInactiveOrFinished ? 'Call' : '...'}
             </span>
           </button>
         ) : (
