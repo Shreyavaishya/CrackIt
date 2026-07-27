@@ -46,18 +46,22 @@ const AuthForm = ({ type }: { type: FormType }) => {
       if (type === "sign-up") {
         const { name, email, password } = data;
 
+        // Create user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
 
+        // Get idToken from the newly created user
+        const idToken = await userCredential.user.getIdToken();
+
+        // Save user to database via server action
         const result = await signUp({
           uid: userCredential.user.uid,
           name: name!,
           email,
-          password,
-          idToken: "",
+          idToken,
         });
 
         if (!result.success) {
@@ -70,18 +74,21 @@ const AuthForm = ({ type }: { type: FormType }) => {
       } else {
         const { email, password } = data;
 
+        // Sign in user
         const userCredential = await signInWithEmailAndPassword(
           auth,
           email,
           password
         );
 
+        // Get idToken
         const idToken = await userCredential.user.getIdToken();
         if (!idToken) {
-          toast.error("Sign in Failed. Please try again.");
+          toast.error("Sign in failed. Please try again.");
           return;
         }
 
+        // Set session cookie via server action
         await signIn({
           email,
           idToken,
@@ -90,9 +97,23 @@ const AuthForm = ({ type }: { type: FormType }) => {
         toast.success("Signed in successfully.");
         router.push("/");
       }
-    } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+    } catch (error: any) {
+      console.error(error);
+      
+      // Handle Firebase specific errors
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email is already in use.");
+      } else if (error.code === "auth/weak-password") {
+        toast.error("Password is too weak.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Invalid email address.");
+      } else if (error.code === "auth/user-not-found") {
+        toast.error("User not found.");
+      } else if (error.code === "auth/wrong-password") {
+        toast.error("Wrong password.");
+      } else {
+        toast.error(`Error: ${error.message || "Something went wrong"}`);
+      }
     }
   };
 

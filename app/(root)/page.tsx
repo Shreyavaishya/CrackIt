@@ -13,6 +13,12 @@ import {
 async function Home() {
   const user = await getCurrentUser();
 
+  // debugging with chatgpt
+  if (!user) {
+    // either redirect to sign-in or show guest UI
+    return <p>Please sign in to view your interviews.</p>;
+  }
+
   const [userInterviews, latestInterviews] = await Promise.all([
     getInterviewsByUserId(user?.id!),
     getLatestInterviews({ userId: user?.id! }),
