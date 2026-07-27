@@ -11,12 +11,12 @@ const privateKey = rawPrivateKey
   ? rawPrivateKey.replace(/\\n/g, "\n").trim().replace(/^["']|["']$/g, "")
   : undefined;
 
-// DEBUG: Print verification in server console
-console.log("--- FIREBASE ADMIN INIT CHECK ---");
-console.log("PROJECT_ID:", projectId ? "✅ Loaded" : "❌ MISSING");
-console.log("CLIENT_EMAIL:", clientEmail ? "✅ Loaded" : "❌ MISSING");
-console.log("PRIVATE_KEY:", privateKey ? `✅ Loaded (${privateKey.length} chars)` : "❌ MISSING");
-console.log("----------------------------------");
+// // DEBUG: Print verification in server console
+// console.log("--- FIREBASE ADMIN INIT CHECK ---");
+// console.log("PROJECT_ID:", projectId ? "✅ Loaded" : "❌ MISSING");
+// console.log("CLIENT_EMAIL:", clientEmail ? "✅ Loaded" : "❌ MISSING");
+// console.log("PRIVATE_KEY:", privateKey ? `✅ Loaded (${privateKey.length} chars)` : "❌ MISSING");
+// console.log("----------------------------------");
 
 if (!getApps().length) {
   if (!projectId || !clientEmail || !privateKey) {

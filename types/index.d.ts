@@ -25,6 +25,15 @@ interface Interview {
   finalized: boolean;
 }
 
+interface CreateInterviewParams {
+  userId: string;
+  role?: string;
+  type?: string;
+  techstack?: string[];
+  questions?: string[];
+  transcript?: { role: string; content: string }[];
+}
+
 interface CreateFeedbackParams {
   interviewId: string;
   userId: string;
@@ -55,9 +64,11 @@ interface AgentProps {
   userId?: string;
   interviewId?: string;
   feedbackId?: string;
-  type: "generate" | "interview";
-  profileImage?: string; 
+  type?: "generate" | "interview";
+  profileImage?: string;
   questions?: string[];
+  role?: string;
+  techstack?: string[];
 }
 
 interface RouteParams {

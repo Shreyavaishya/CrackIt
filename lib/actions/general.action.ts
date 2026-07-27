@@ -2,15 +2,49 @@
 
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
+import { revalidatePath } from "next/cache";
 
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
 
-// helper to clean invalid trailing commas in JSON-like strings
+// Helper to clean invalid trailing commas in JSON strings if needed
 function cleanJSON(text: string) {
   return text.replace(/,\s*([}\]])/g, "$1");
 }
 
+// ==========================================
+// 1. CREATE INTERVIEW (NEWLY ADDED)
+// ==========================================
+export async function createInterview(params: CreateInterviewParams) {
+  const { userId, role, type, techstack, questions, transcript } = params;
+
+  try {
+    const interviewData = {
+      userId,
+      role: role || "Software Engineer",
+      type: type || "Technical",
+      techstack: techstack || [],
+      questions: questions || [],
+      transcript: transcript || [],
+      finalized: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection("interviews").add(interviewData);
+
+    // CRITICAL: Tells Next.js to clear cache and render new cards on dashboard
+    revalidatePath("/");
+
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error("Error creating interview:", error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+// ==========================================
+// 2. CREATE FEEDBACK
+// ==========================================
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
 
@@ -23,9 +57,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       .join("");
 
     const { object } = await generateObject({
-      model: google("gemini-2.0-flash-001", {
-        structuredOutputs: false,
-      }),
+      model: google("gemini-2.0-flash-001"),
       schema: feedbackSchema,
       prompt: `
         You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
@@ -40,7 +72,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
         - **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
         `,
       system:
-        "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
+        "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories.",
     });
 
     const feedback = {
@@ -64,6 +96,9 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
     await feedbackRef.set(feedback);
 
+    revalidatePath(`/interview/${interviewId}`);
+    revalidatePath("/");
+
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
     console.error("Error saving feedback:", error);
@@ -71,49 +106,74 @@ export async function createFeedback(params: CreateFeedbackParams) {
   }
 }
 
+// ==========================================
+// 3. GET INTERVIEW BY ID
+// ==========================================
 export async function getInterviewById(id: string): Promise<Interview | null> {
-  const interview = await db.collection("interviews").doc(id).get();
+  try {
+    const interview = await db.collection("interviews").doc(id).get();
+    if (!interview.exists) return null;
 
-  return interview.data() as Interview | null;
+    return { id: interview.id, ...interview.data() } as Interview;
+  } catch (error) {
+    console.error("Error fetching interview by ID:", error);
+    return null;
+  }
 }
 
+// ==========================================
+// 4. GET FEEDBACK BY INTERVIEW ID
+// ==========================================
 export async function getFeedbackByInterviewId(
   params: GetFeedbackByInterviewIdParams
 ): Promise<Feedback | null> {
   const { interviewId, userId } = params;
 
-  const feedback = await db
-    .collection("feedback")
-    .where("interviewId", "==", interviewId)
-    .where("userId", "==", userId)
-    .limit(1)
-    .get();
+  try {
+    const feedback = await db
+      .collection("feedback")
+      .where("interviewId", "==", interviewId)
+      .where("userId", "==", userId)
+      .limit(1)
+      .get();
 
-  if (feedback.empty) return null;
+    if (feedback.empty) return null;
 
-  const feedbackDoc = feedback.docs[0];
-  return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+    const feedbackDoc = feedback.docs[0];
+    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+  } catch (error) {
+    console.error("Error fetching feedback:", error);
+    return null;
+  }
 }
 
+// ==========================================
+// 5. GET LATEST INTERVIEWS (COMMUNITY / DISCOVER)
+// ==========================================
 export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
 
-  const interviews = await db
-    .collection("interviews")
-    .orderBy("createdAt", "desc")
-    .where("finalized", "==", true)
-    .where("userId", "!=", userId)
-    .limit(limit)
-    .get();
+  try {
+    const interviews = await db
+      .collection("interviews")
+      .where("finalized", "==", true)
+      .limit(limit)
+      .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+    return interviews.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() } as Interview))
+      .filter((interview) => interview.userId !== userId);
+  } catch (error) {
+    console.error("Error fetching latest interviews:", error);
+    return [];
+  }
 }
 
+// ==========================================
+// 6. GET INTERVIEWS BY USER ID
+// ==========================================
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
@@ -121,14 +181,26 @@ export async function getInterviewsByUserId(
     throw new Error("userId is required to fetch interviews.");
   }
 
-  const interviews = await db
-    .collection("interviews")
-    .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
-    .get();
+  try {
+    // Basic query to avoid mandatory Firestore composite index requirement
+    const interviews = await db
+      .collection("interviews")
+      .where("userId", "==", userId)
+      .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+    const result = interviews.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+
+    // Sort in JS runtime to avoid missing index exceptions
+    return result.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+  } catch (error) {
+    console.error("Error fetching user interviews:", error);
+    return [];
+  }
 }

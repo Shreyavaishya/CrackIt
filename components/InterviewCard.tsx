@@ -14,12 +14,37 @@ const InterviewCard = async ({
   techstack,
   createdAt,
 }: InterviewCardProps) => {
-  
-  const Feedback = userId && id ? await getFeedbackByInterviewId({
-    interviewId: id, userId,
-    id: id
-  }) : null;
+  // 1. Safe Feedback Fetching
+  let Feedback = null;
+  if (userId && id) {
+    try {
+      Feedback = await getFeedbackByInterviewId({
+        interviewId: id,
+        userId,
+        id,
+      });
+    } catch (error) {
+      // Catch empty feedback for new interviews silently
+      Feedback = null;
+    }
+  }
 
+  // 2. Safe Date Parsing (Handles Firestore Timestamps)
+  const rawDate = Feedback?.createdAt || createdAt;
+
+let parsedDate: Date | string | number = Date.now();
+
+if (rawDate) {
+  // Cast rawDate to unknown/any to inspect .toDate() without TS complaining about 'never'
+  const dateObj = rawDate as any;
+  
+  if (typeof dateObj?.toDate === "function") {
+    parsedDate = dateObj.toDate();
+  } else {
+    parsedDate = rawDate as string | number | Date;
+  }
+}
+  const formattedDate = dayjs(parsedDate).format("MMM D, YYYY");
 
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
 
@@ -29,9 +54,6 @@ const InterviewCard = async ({
       Mixed: "bg-light-600",
       Technical: "bg-light-800",
     }[normalizedType] || "bg-light-600";
-
-  const formattedDate = dayjs(Feedback?.createdAt || createdAt || Date.now()
-  ).format("MMM D, YYYY");
 
   return (
     <div className="card-border w-[360px] max-sm:w-full min-h-96">
@@ -44,7 +66,7 @@ const InterviewCard = async ({
               badgeColor
             )}
           >
-            <p className="badge-text ">{normalizedType}</p>
+            <p className="badge-text">{normalizedType}</p>
           </div>
 
           {/* Cover Image */}
@@ -72,13 +94,13 @@ const InterviewCard = async ({
             </div>
 
             <div className="flex flex-row gap-2 items-center">
-               <Image src="/star.svg" width={22} height={22} alt="star" />
-              <p>{Feedback?.totalScore || "---"}/100</p>
+              <Image src="/star.svg" width={22} height={22} alt="star" />
+              <p>{Feedback?.totalScore ? `${Feedback.totalScore}/100` : "---/100"}</p>
             </div>
           </div>
 
           {/* Feedback or Placeholder Text */}
-           <p className="line-clamp-2 mt-5">
+          <p className="line-clamp-2 mt-5">
             {Feedback?.finalAssessment ||
               "You haven't taken this interview yet. Take it now to improve your skills."}
           </p>
@@ -86,8 +108,8 @@ const InterviewCard = async ({
 
         <div className="flex flex-row justify-between">
           <DisplayTechIcons techStack={techstack} />
-         
-          <Button className="btn-primary">
+
+          <Button className="btn-primary" asChild>
             <Link
               href={
                 Feedback
