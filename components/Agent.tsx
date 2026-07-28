@@ -132,41 +132,43 @@ const Agent = ({
 
   // 3. Initiate Call
   const handleCall = async () => {
-    setCallStatus(CallStatus.CONNECTING);
+  setCallStatus(CallStatus.CONNECTING);
 
-    try {
-      if (type === "generate") {
-        await vapi.start(
-          undefined,
-          undefined,
-          undefined,
-          process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
-          {
-            variableValues: {
-              username: userName,
-              userid: userId, // ✅ Dynamic user ID
-            },
-          }
-        );
-      } else {
-        let formattedQuestions = "";
-        if (questions && questions.length > 0) {
-          formattedQuestions = questions
-            .map((question) => `- ${question}`)
-            .join("\n");
-        }
-
-        await vapi.start(interviewer, {
+  try {
+    if (type === "generate") {
+      await vapi.start(
+        undefined,
+        undefined,
+        undefined,
+        process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
+        {
           variableValues: {
-            questions: formattedQuestions,
+            username: userName,
+            userid: userId,
+            role: role || "Software Engineer", // 👈 NOW PASSED TO VAPI WORKFLOW
+            techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack, // 👈 NOW PASSED TO VAPI WORKFLOW
           },
-        });
+        }
+      );
+    } else {
+      let formattedQuestions = "";
+      if (questions && questions.length > 0) {
+        formattedQuestions = questions
+          .map((question) => `- ${question}`)
+          .join("\n");
       }
-    } catch (error) {
-      console.error("Failed to start Vapi call:", error);
-      setCallStatus(CallStatus.INACTIVE);
+
+      await vapi.start(interviewer, {
+        variableValues: {
+          questions: formattedQuestions,
+        },
+      });
     }
-  };
+  } catch (error) {
+    console.error("Failed to start Vapi call:", error);
+    setCallStatus(CallStatus.INACTIVE);
+  }
+};
 
   // 4. Disconnect Gracefully
   const handleDisconnect = () => {
