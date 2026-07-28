@@ -45,6 +45,9 @@ export async function createInterview(params: CreateInterviewParams) {
 // ==========================================
 // 2. CREATE FEEDBACK
 // ==========================================
+
+// lib/actions/general.action.ts
+
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
 
@@ -53,26 +56,25 @@ export async function createFeedback(params: CreateFeedbackParams) {
       .map((sentence) => `- ${sentence.role}: ${sentence.content}\n`)
       .join("");
 
-    let object;
+    const { object } = await generateObject({
+      model: google("gemini-2.0-flash-lite"), // 👈 Fast, reliable 2.0 model
+      schema: feedbackSchema,
+      prompt: `
+        You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
+        
+        Transcript:
+        ${formattedTranscript}
 
-    try {
-      // Primary Attempt: Gemini 2.0 Flash
-      const result = await generateObject({
-        model: google("gemini-2.0-flash"),
-        schema: feedbackSchema,
-        prompt: `...`,
-      });
-      object = result.object;
-    } catch (rateLimitErr) {
-      console.warn("Primary model throttled, retrying with fallback model...");
-      // Fallback Attempt: Gemini 1.5 Flash
-      const fallbackResult = await generateObject({
-        model: google("gemini-1.5-flash"),
-        schema: feedbackSchema,
-        prompt: `...`,
-      });
-      object = fallbackResult.object;
-    }
+        Please score the candidate from 0 to 100 for ALL 5 of these exact categories:
+        1. Communication Skills
+        2. Technical Knowledge
+        3. Problem Solving
+        4. Cultural Fit
+        5. Confidence and Clarity
+      `,
+      system:
+        "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories.",
+    });
 
     const feedback = {
       interviewId,
@@ -97,10 +99,11 @@ export async function createFeedback(params: CreateFeedbackParams) {
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
     console.error("Error saving feedback:", error);
-    return { success: false };
+    return { success: false, error: (error as Error).message };
   }
 }
 
+    
 
 // ==========================================
 // 3. GET INTERVIEW BY ID
