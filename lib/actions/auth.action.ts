@@ -24,46 +24,43 @@ export async function setSessionCookie(idToken: string) {
     sameSite: "lax",
   });
 }
+// lib/actions/auth.action.ts
 
 export async function signUp(params: SignUpParams) {
   const { uid, name, email } = params;
 
   try {
-    // check if user exists in db
-    const userRecord = await db.collection("users").doc(uid).get();
-    if (userRecord.exists)
+    const userRef = db.collection("users").doc(uid);
+    
+    // 1. Wrap the lookup safely
+    let userExists = false;
+    try {
+      const userRecord = await userRef.get();
+      userExists = userRecord.exists;
+    } catch (e: any) {
+      // If collection doesn't exist yet in fresh DB, ignore 5 NOT_FOUND
+      if (e?.code !== 5) throw e;
+    }
+
+    if (userExists) {
       return {
         success: false,
-        message: "User already exists. Please sign in.",
-      };
-
-    // save user to db
-    await db.collection("users").doc(uid).set({
-      name,
-      email,
-      // profileURL,
-      // resumeURL,
-    });
-
-    return {
-      success: true,
-      message: "Account created successfully. Please sign in.",
-    };
-  } catch (error: any) {
-    console.error("Error creating user:", error);
-
-    // Handle Firebase specific errors
-    if (error.code === "auth/email-already-exists") {
-      return {
-        success: false,
-        message: "This email is already in use",
+        message: "User already exists.",
       };
     }
 
-    return {
-      success: false,
-      message: "Failed to create account. Please try again.",
-    };
+    // 2. Create the user document (This will automatically create the 'users' collection!)
+    await userRef.set({
+      name,
+      email,
+      userId: uid,
+      createdAt: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -97,30 +94,27 @@ export async function signOut() {
 }
 
 // Get current user from session cookie
-export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = await cookies();
-
-  const sessionCookie = cookieStore.get("session")?.value;
-  if (!sessionCookie) return null;
-
+export async function getCurrentUser() {
   try {
+    const sessionCookie = (await cookies()).get("session")?.value;
+    if (!sessionCookie) return null;
+
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    if (!decodedClaims?.uid) return null;
 
-    // get user info from db
-    const userRecord = await db
-      .collection("users")
-      .doc(decodedClaims.uid)
-      .get();
-    if (!userRecord.exists) return null;
+    let userDoc;
+    try {
+      userDoc = await db.collection("users").doc(decodedClaims.uid).get();
+    } catch (dbError: any) {
+      console.error("Firestore user fetch error:", dbError?.message);
+      return null;
+    }
 
-    return {
-      ...userRecord.data(),
-      id: userRecord.id,
-    } as User;
+    if (!userDoc || !userDoc.exists) return null;
+
+    return { id: userDoc.id, ...userDoc.data() };
   } catch (error) {
-    console.log(error);
-
-    // Invalid or expired session
+    console.error("Error in getCurrentUser:", error);
     return null;
   }
 }

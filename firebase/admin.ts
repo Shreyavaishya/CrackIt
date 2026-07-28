@@ -11,16 +11,9 @@ const privateKey = rawPrivateKey
   ? rawPrivateKey.replace(/\\n/g, "\n").trim().replace(/^["']|["']$/g, "")
   : undefined;
 
-// // DEBUG: Print verification in server console
-// console.log("--- FIREBASE ADMIN INIT CHECK ---");
-// console.log("PROJECT_ID:", projectId ? "✅ Loaded" : "❌ MISSING");
-// console.log("CLIENT_EMAIL:", clientEmail ? "✅ Loaded" : "❌ MISSING");
-// console.log("PRIVATE_KEY:", privateKey ? `✅ Loaded (${privateKey.length} chars)` : "❌ MISSING");
-// console.log("----------------------------------");
-
 if (!getApps().length) {
   if (!projectId || !clientEmail || !privateKey) {
-    throw new Error("❌ Cannot initialize Firebase Admin: Missing environment variables.");
+    throw new Error("❌ Missing Firebase Admin environment variables.");
   }
 
   initializeApp({
@@ -29,8 +22,10 @@ if (!getApps().length) {
       clientEmail,
       privateKey,
     }),
+    projectId,
   });
 }
 
+// Pass no arguments or explicit default to target default Firestore instance
 export const db = getFirestore();
 export const auth = getAuth();
